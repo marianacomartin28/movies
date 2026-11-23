@@ -19,6 +19,33 @@ movies_clean <- movies |>
 ```
 
 ```{r}
+movies_gap <- movies_clean |>
+  filter(
+    is.na(tomatoMeter) | tomatoMeter != 0,
+    is.na(audienceScore) | audienceScore != 0
+  ) |>
+  mutate(gap = tomatoMeter - audienceScore)
+
+movies_summary <- movies_gap |>
+  group_by(genre) |>
+  summarise(mean_gap = mean(gap, na.rm = TRUE), n = n()) |>
+  filter(n >= 100) |>
+  arrange(mean_gap)
+```
+
+```{r}
+ggplot(movies_summary, aes(x = mean_gap, y = fct_reorder(genre, mean_gap))) +
+  geom_col() +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(
+    title = "Average Critic-Audience Gap by Genre",
+    subtitle = "Negative gaps favor audiences; positive gaps favor critics",
+    x = "Mean Tomatometer - Audience Score",
+    y = "Genre"
+  )
+```
+
+```{r}
 ggplot(movies, aes(x = tomatoMeter)) +
   geom_histogram(na.rm = TRUE) +
   labs(
@@ -27,4 +54,56 @@ ggplot(movies, aes(x = tomatoMeter)) +
     x = "Tomatometer Score",
     y = "Count"
   )
+```
+
+```{r}
+spiderman <- movies |>
+  filter(title %in% c(
+    "Spider-Man",
+    "Spider-Man 2",
+    "Spider-Man 3",
+    "The Amazing Spider-Man",
+    "The Amazing Spider-Man 2",
+    "Spider-Man: Homecoming",
+    "Spider-Man: Far From Home",
+    "Spider-Man: No Way Home"
+  )) |>
+  mutate(
+    actor = case_when(
+      title %in% c("Spider-Man", "Spider-Man 2", "Spider-Man 3") ~ "Tobey Maguire",
+      str_detect(title, "^The Amazing Spider-Man") ~ "Andrew Garfield",
+      str_detect(title, "^Spider-Man:") ~ "Tom Holland"
+    ),
+    gap = tomatoMeter - audienceScore
+  ) |>
+  arrange(releaseDateTheaters)
+
+spiderman |>
+  pivot_longer(
+    cols = c(tomatoMeter, audienceScore),
+    names_to = "score_type",
+    values_to = "score"
+  ) |>
+  mutate(
+    score_type = recode(
+      score_type,
+      tomatoMeter = "Tomatometer",
+      audienceScore = "Audience"
+    )
+  ) |>
+  ggplot(aes(
+    x = fct_reorder(title, releaseDateTheaters),
+    y = score,
+    color = score_type,
+    group = score_type
+  )) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Critics Favored the Maguire Trilogy; Audiences Favored the Amazing Films",
+    x = "Film (release order)",
+    y = "Score",
+    color = "Score"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
