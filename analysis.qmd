@@ -2,4 +2,13 @@
 title: "Movie Analysis"
 author: "Mariana Comartin"
 format: html
+execute:
+  echo: false
 ---
+
+```{r}
+#| message: false
+library(tidyverse)
+movies <- read_csv("data/movies.csv")
+movies
+```
